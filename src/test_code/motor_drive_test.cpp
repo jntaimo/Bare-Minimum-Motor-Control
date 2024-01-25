@@ -44,7 +44,7 @@ void drive(double left, double right){
 
 void setup(){
     driveSetup();
-    Serial.begin(115200);
+    Serial.begin();
 }
 
 void loop(){
