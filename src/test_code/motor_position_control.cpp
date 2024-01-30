@@ -6,7 +6,7 @@
 #include "EveryNMicros.h"
 #include "drive_single.h"
 
-double kp = 5;
+double kp = 10;
 double ki = 0;
 double kd = 0;
 
@@ -16,12 +16,12 @@ double setpoint = 0; //radians
 double position = 0; //radians
 double velocity = 0; //radians per second
 double controlEffort = 0; //volts
-double controlPower = 0; //watts
+double dutyCycle = 0; //percent
 
 PID motorPID(kp, ki, kd, 0, tau, false);
 
 #define COUNTS_PER_REVOLUTION 537.7 //312 RPM
-EncoderVelocity encoder(LEFT_ENCODER_A_PIN, LEFT_ENCODER_B_PIN, COUNTS_PER_REVOLUTION);
+EncoderVelocity encoder(LEFT_ENCODER_A_PIN, LEFT_ENCODER_B_PIN, COUNTS_PER_REVOLUTION, 0.2);
 
 unsigned long currentPidLoopStartTime = 0;
 unsigned long previousPidLoopStartTime = 0;
@@ -35,7 +35,7 @@ void setup() {
 }
 
 void loop() {
-    // Update PID at 500Hz
+    // Update PID at 10kHz
     EVERY_N_MICROS(100) {
         currentPidLoopStartTime = micros(); // Record start time of current PID loop
 
@@ -47,10 +47,12 @@ void loop() {
         pidLoopIntervalCount++;
 
         // PID control logic
-        setpoint = 2 * PI * sin(4*(millis() / 1000.0));
+        setpoint = PI * sin(2*(millis() / 1000.0));
         position = encoder.getPosition();
+        velocity = encoder.getVelocity();
         controlEffort = motorPID.calculateParallel(setpoint, position);
-        controlPower = constrain(controlEffort / 12.0, -1, 1);
+        //controlEffort = motorPID.calculateParallel(setpoint, velocity);
+        dutyCycle = constrain(controlEffort / 12.0, -1, 1);
         driveVolts(controlEffort);
     }
 
@@ -60,9 +62,12 @@ void loop() {
             // Calculate the average time between PID loop starts
             double averageTimeBetweenPidLoops = (double)timeBetweenPidLoopsAccumulator / (pidLoopIntervalCount - 1);
             // Print position parameters and the average time between PID loop starts
-            Serial.printf("Setpoint (rad): %.2f, Position (rad): %.2f, Control Effort (v): %.2f, Control Power: %.3f, Avg Time Between PID Loops (us): %.2f\n",
-                          setpoint, position, controlEffort, controlPower, averageTimeBetweenPidLoops);
 
+            Serial.printf("Setpoint (rad): %.2f, Position (rad): %.2f, Control Effort (v): %.2f, Duty Cycle: %.3f, Avg Time Between PID Loops (us): %.2f\n",
+                          setpoint, position, controlEffort, dutyCycle, averageTimeBetweenPidLoops);
+
+            // Serial.printf("Setpoint (rad/s): %.2f, Velocity (rad): %.2f, Control Effort (v): %.2f, Duty Cycle: %.3f, Avg Time Between PID Loops (us): %.2f\n",
+            //               setpoint, velocity, controlEffort, dutyCycle, averageTimeBetweenPidLoops);
             // Reset the accumulator and count for the next set of averages
             timeBetweenPidLoopsAccumulator = 0;
             pidLoopIntervalCount = 1; // Reset to 1 to skip the first loop's interval calculation
