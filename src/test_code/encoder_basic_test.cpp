@@ -8,7 +8,7 @@ ESP32Encoder encoder2;
 
 void setup(){
 	
-	Serial.begin(115200);
+	Serial.begin();
 
 	// Enable the weak pull down resistors
 	ESP32Encoder::useInternalWeakPullResistors=UP;
