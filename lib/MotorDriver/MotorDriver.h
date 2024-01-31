@@ -4,6 +4,7 @@
 #include <Arduino.h>
 
 /**
+ * @class MotorDriver
  * @brief Class to control a motor using PWM.
  */
 class MotorDriver {
